@@ -1,61 +1,292 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KrtlTech Official</title>
-    <style>
-        body {
-            background-color: #0d1117;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            text-align: center;
-            background: #161b22;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            border: 1px solid #30363d;
-        }
-        h1 {
-            color: #58a6ff;
-            margin-bottom: 10px;
-            font-size: 2rem;
-        }
-        p {
-            color: #8b949e;
-            margin-bottom: 25px;
-        }
-        .audio-player {
-            margin-top: 20px;
-            background: #21262d;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #30363d;
-        }
-        audio {
-            width: 300px;
-            outline: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KrtlMusic</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial;
+}
+
+body{
+    background:#111;
+    color:white;
+    display:flex;
+    height:100vh;
+    overflow:hidden;
+}
+
+/* SOL MENÜ */
+.sidebar{
+    width:250px;
+    background:#1b1b1b;
+    padding:15px;
+    border-right:2px solid #333;
+    overflow-y:auto;
+}
+
+.sidebar h2{
+    margin-bottom:15px;
+    text-align:center;
+    color:#00ff99;
+}
+
+.music-item{
+    background:#2a2a2a;
+    padding:10px;
+    margin-bottom:10px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.music-item:hover{
+    background:#00ff99;
+    color:black;
+}
+
+/* ANA PLAYER */
+.main{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.player{
+    width:400px;
+    background:#1e1e1e;
+    padding:25px;
+    border-radius:20px;
+    text-align:center;
+    box-shadow:0 0 20px rgba(0,255,153,0.3);
+}
+
+.player h1{
+    margin-bottom:20px;
+    color:#00ff99;
+}
+
+button{
+    background:#00ff99;
+    color:black;
+    border:none;
+    padding:12px 20px;
+    margin:10px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+input[type=file]{
+    margin-top:15px;
+    color:white;
+}
+
+.status{
+    margin-top:15px;
+    color:#aaa;
+}
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>KRTLTECH</h1>
-        <p>Official Web Project</p>
-        
-        <div class="audio-player">
-            <audio controls src="ses.mp3"></audio>
+<!-- SOL MENÜ -->
+<div class="sidebar">
+    <h2>KrtlMusic</h2>
+
+    <div id="musicList"></div>
+
+    <input type="file" id="upload" multiple accept=".mp3">
+</div>
+
+<!-- PLAYER -->
+<div class="main">
+    <div class="player">
+
+        <h1 id="songName">Müzik Seçilmedi</h1>
+
+        <button onclick="playMusic()">▶ Oynat</button>
+        <button onclick="pauseMusic()">⏸ Duraklat</button>
+
+        <br>
+
+        <button id="effectBtn" onclick="toggleEffects()">
+            Reverb OFF
+        </button>
+
+        <div class="status" id="status">
+            Efektler Kapalı
         </div>
+
     </div>
+</div>
+
+<script>
+let audio = new Audio();
+let currentFile = null;
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioContext = new AudioContext();
+
+let source = null;
+
+let effectsEnabled = false;
+
+/* EFEKTLER */
+const bassBoost = audioContext.createBiquadFilter();
+bassBoost.type = "lowshelf";
+bassBoost.frequency.value = 200;
+bassBoost.gain.value = 15;
+
+const delayNode = audioContext.createDelay();
+delayNode.delayTime.value = 0.25;
+
+const feedback = audioContext.createGain();
+feedback.gain.value = 0.4;
+
+delayNode.connect(feedback);
+feedback.connect(delayNode);
+
+const panner = audioContext.createStereoPanner();
+
+let panValue = -1;
+let panInterval;
+
+/* MÜZİK YÜKLE */
+document.getElementById("upload").addEventListener("change", (e) => {
+
+    const files = e.target.files;
+
+    for(let file of files){
+
+        const div = document.createElement("div");
+        div.className = "music-item";
+        div.innerText = file.name;
+
+        div.onclick = () => {
+            loadMusic(file);
+        };
+
+        document.getElementById("musicList").appendChild(div);
+    }
+
+});
+
+/* MÜZİK YÜKLEME */
+function loadMusic(file){
+
+    currentFile = file;
+
+    const url = URL.createObjectURL(file);
+
+    audio.src = url;
+
+    document.getElementById("songName").innerText = file.name;
+
+    setupAudio();
+}
+
+/* SES SİSTEMİ */
+function setupAudio(){
+
+    if(source){
+        source.disconnect();
+    }
+
+    source = audioContext.createMediaElementSource(audio);
+
+    if(effectsEnabled){
+
+        source.connect(bassBoost);
+
+        bassBoost.connect(panner);
+
+        panner.connect(delayNode);
+
+        delayNode.connect(audioContext.destination);
+
+    }else{
+
+        source.connect(audioContext.destination);
+
+    }
+}
+
+/* PLAY */
+function playMusic(){
+
+    audioContext.resume();
+    audio.play();
+
+}
+
+/* PAUSE */
+function pauseMusic(){
+
+    audio.pause();
+
+}
+
+/* EFEKT */
+function toggleEffects(){
+
+    effectsEnabled = !effectsEnabled;
+
+    setupAudio();
+
+    const btn = document.getElementById("effectBtn");
+    const status = document.getElementById("status");
+
+    if(effectsEnabled){
+
+        btn.innerText = "Reverb ON";
+        status.innerText = "8D + Bass + Reverb + Yankı Açık";
+
+        start8D();
+
+    }else{
+
+        btn.innerText = "Reverb OFF";
+        status.innerText = "Efektler Kapalı";
+
+        stop8D();
+
+    }
+
+}
+
+/* 8D */
+function start8D(){
+
+    clearInterval(panInterval);
+
+    panInterval = setInterval(() => {
+
+        panner.pan.value = Math.sin(Date.now()/500);
+
+    }, 20);
+
+}
+
+function stop8D(){
+
+    clearInterval(panInterval);
+
+    panner.pan.value = 0;
+
+}
+</script>
 
 </body>
 </html>
