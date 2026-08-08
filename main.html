@@ -1,292 +1,157 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KrtlMusic</title>
-
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial;
-}
-
-body{
-    background:#111;
-    color:white;
-    display:flex;
-    height:100vh;
-    overflow:hidden;
-}
-
-/* SOL MENÜ */
-.sidebar{
-    width:250px;
-    background:#1b1b1b;
-    padding:15px;
-    border-right:2px solid #333;
-    overflow-y:auto;
-}
-
-.sidebar h2{
-    margin-bottom:15px;
-    text-align:center;
-    color:#00ff99;
-}
-
-.music-item{
-    background:#2a2a2a;
-    padding:10px;
-    margin-bottom:10px;
-    border-radius:10px;
-    cursor:pointer;
-    transition:0.2s;
-}
-
-.music-item:hover{
-    background:#00ff99;
-    color:black;
-}
-
-/* ANA PLAYER */
-.main{
-    flex:1;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.player{
-    width:400px;
-    background:#1e1e1e;
-    padding:25px;
-    border-radius:20px;
-    text-align:center;
-    box-shadow:0 0 20px rgba(0,255,153,0.3);
-}
-
-.player h1{
-    margin-bottom:20px;
-    color:#00ff99;
-}
-
-button{
-    background:#00ff99;
-    color:black;
-    border:none;
-    padding:12px 20px;
-    margin:10px;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:bold;
-    transition:0.2s;
-}
-
-button:hover{
-    transform:scale(1.05);
-}
-
-input[type=file]{
-    margin-top:15px;
-    color:white;
-}
-
-.status{
-    margin-top:15px;
-    color:#aaa;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erken Erişim KrtlTech Şarkıları</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .player-container {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: #38bdf8;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        audio {
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .playlist {
+            list-style: none;
+            max-height: 250px;
+            overflow-y: auto;
+            border-top: 1px solid #334155;
+            padding-top: 10px;
+        }
+        .playlist li {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            background-color: #0f172a;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .playlist li:hover {
+            background-color: #334155;
+            color: #38bdf8;
+        }
+        .playlist li.active {
+            background-color: #0284c7;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .info {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #64748b;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 
-<!-- SOL MENÜ -->
-<div class="sidebar">
-    <h2>KrtlMusic</h2>
+    <div class="player-container">
+        <h1>KrtlTech Erken Erişim</h1>
+        <p class="subtitle">Gizli Stüdyo Kayıtları</p>
+        
+        <!-- Ses Oynatıcı -->
+        <audio id="audioPlayer" controls></audio>
 
-    <div id="musicList"></div>
+        <!-- Şarkı Listesi -->
+        <ul id="playlist" class="playlist">
+            <!-- Otomatik olarak yüklenecek -->
+        </ul>
 
-    <input type="file" id="upload" multiple accept=".mp3">
-</div>
-
-<!-- PLAYER -->
-<div class="main">
-    <div class="player">
-
-        <h1 id="songName">Müzik Seçilmedi</h1>
-
-        <button onclick="playMusic()">▶ Oynat</button>
-        <button onclick="pauseMusic()">⏸ Duraklat</button>
-
-        <br>
-
-        <button id="effectBtn" onclick="toggleEffects()">
-            Reverb OFF
-        </button>
-
-        <div class="status" id="status">
-            Efektler Kapalı
-        </div>
-
+        <div class="info">Klasördeki tüm sesler listelenir.</div>
     </div>
-</div>
 
-<script>
-let audio = new Audio();
-let currentFile = null;
+    <script>
+        // KLANIN/KLASÖRÜN SES DOSYALARI (Buraya aynı klasördeki müziklerin dosya adlarını yazıyorsun kanka)
+        // Örn: "sunucu_bende.mp3", "remix2.mp3" gibi.
+        const tracks = [
+            { name: "Sunucu Bende (Erken Erişim)", file: "sunucu_bende.mp3" },
+            // Buraya yeni şarkı eklemek istersen aynen şu formatta çoğaltabilirsin:
+            // { name: "Şarkı Adı", file: "dosya_adi.mp3" },
+        ];
 
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioContext = new AudioContext();
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playlistElement = document.getElementById('playlist');
+        let currentTrackIndex = 0;
 
-let source = null;
+        function loadTrack(index) {
+            if (tracks.length === 0) return;
+            currentTrackIndex = index;
+            audioPlayer.src = tracks[index].file;
+            audioPlayer.play();
+            
+            // Aktif sınıfını güncelle
+            const items = playlistElement.querySelectorAll('li');
+            items.forEach((li, idx) => {
+                if (idx === index) {
+                    li.classList.add('active');
+                } else {
+                    li.classList.remove('active');
+                }
+            });
+        }
 
-let effectsEnabled = false;
+        function initPlaylist() {
+            playlistElement.innerHTML = '';
+            tracks.forEach((track, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${track.name}`;
+                li.addEventListener('click', () => {
+                    loadTrack(index);
+                });
+                playlistElement.appendChild(li);
+            });
 
-/* EFEKTLER */
-const bassBoost = audioContext.createBiquadFilter();
-bassBoost.type = "lowshelf";
-bassBoost.frequency.value = 200;
-bassBoost.gain.value = 15;
+            if (tracks.length > 0) {
+                audioPlayer.src = tracks[0].file;
+                playlistElement.children[0].classList.add('active');
+            }
+        }
 
-const delayNode = audioContext.createDelay();
-delayNode.delayTime.value = 0.25;
+        // Şarkı bitince sıradakine geçsin
+        audioPlayer.addEventListener('ended', () => {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            loadTrack(currentTrackIndex);
+        });
 
-const feedback = audioContext.createGain();
-feedback.gain.value = 0.4;
-
-delayNode.connect(feedback);
-feedback.connect(delayNode);
-
-const panner = audioContext.createStereoPanner();
-
-let panValue = -1;
-let panInterval;
-
-/* MÜZİK YÜKLE */
-document.getElementById("upload").addEventListener("change", (e) => {
-
-    const files = e.target.files;
-
-    for(let file of files){
-
-        const div = document.createElement("div");
-        div.className = "music-item";
-        div.innerText = file.name;
-
-        div.onclick = () => {
-            loadMusic(file);
-        };
-
-        document.getElementById("musicList").appendChild(div);
-    }
-
-});
-
-/* MÜZİK YÜKLEME */
-function loadMusic(file){
-
-    currentFile = file;
-
-    const url = URL.createObjectURL(file);
-
-    audio.src = url;
-
-    document.getElementById("songName").innerText = file.name;
-
-    setupAudio();
-}
-
-/* SES SİSTEMİ */
-function setupAudio(){
-
-    if(source){
-        source.disconnect();
-    }
-
-    source = audioContext.createMediaElementSource(audio);
-
-    if(effectsEnabled){
-
-        source.connect(bassBoost);
-
-        bassBoost.connect(panner);
-
-        panner.connect(delayNode);
-
-        delayNode.connect(audioContext.destination);
-
-    }else{
-
-        source.connect(audioContext.destination);
-
-    }
-}
-
-/* PLAY */
-function playMusic(){
-
-    audioContext.resume();
-    audio.play();
-
-}
-
-/* PAUSE */
-function pauseMusic(){
-
-    audio.pause();
-
-}
-
-/* EFEKT */
-function toggleEffects(){
-
-    effectsEnabled = !effectsEnabled;
-
-    setupAudio();
-
-    const btn = document.getElementById("effectBtn");
-    const status = document.getElementById("status");
-
-    if(effectsEnabled){
-
-        btn.innerText = "Reverb ON";
-        status.innerText = "8D + Bass + Reverb + Yankı Açık";
-
-        start8D();
-
-    }else{
-
-        btn.innerText = "Reverb OFF";
-        status.innerText = "Efektler Kapalı";
-
-        stop8D();
-
-    }
-
-}
-
-/* 8D */
-function start8D(){
-
-    clearInterval(panInterval);
-
-    panInterval = setInterval(() => {
-
-        panner.pan.value = Math.sin(Date.now()/500);
-
-    }, 20);
-
-}
-
-function stop8D(){
-
-    clearInterval(panInterval);
-
-    panner.pan.value = 0;
-
-}
-</script>
-
+        initPlaylist();
+    </script>
 </body>
 </html>
